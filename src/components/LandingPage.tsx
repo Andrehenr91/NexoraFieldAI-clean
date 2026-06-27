@@ -366,7 +366,7 @@ export default function LandingPage({ onGoToRegister, onGoToLogin }: LandingPage
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
             <button onClick={onGoToRegister}
               className="flex items-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-sm transition-all shadow-2xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:-translate-y-0.5">
               <Zap className="h-4 w-4" />
@@ -377,6 +377,21 @@ export default function LandingPage({ onGoToRegister, onGoToLogin }: LandingPage
               className="flex items-center gap-2 px-6 py-4 rounded-2xl border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white font-semibold text-sm transition-all hover:bg-slate-900/50">
               <Play className="h-4 w-4" />
               Ver Casos de Sucesso
+            </button>
+          </div>
+
+          {/* Technician CTA Banner */}
+          <div className="flex justify-center mb-10">
+            <button onClick={onGoToRegister}
+              className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 hover:border-emerald-500/60 hover:bg-emerald-500/15 transition-all group">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                <HardHat className="h-4 w-4 text-emerald-400" />
+              </div>
+              <div className="text-left">
+                <div className="text-xs font-bold text-emerald-400">É técnico? Cadastre-se grátis</div>
+                <div className="text-[10px] text-slate-500">Receba chamados na sua região · Pagamento PIX em 24h</div>
+              </div>
+              <ArrowRight className="h-4 w-4 text-emerald-400 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
 
@@ -970,15 +985,20 @@ export default function LandingPage({ onGoToRegister, onGoToLogin }: LandingPage
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button onClick={onGoToRegister}
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-sm transition-all shadow-2xl shadow-cyan-500/25">
-                <Zap className="h-4 w-4" />
-                Começar Teste Gratuito — 14 dias
+                <Building2 className="h-4 w-4" />
+                Cadastrar Empresa — 14 dias grátis
               </button>
-              <button onClick={onGoToLogin}
-                className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-sm font-semibold transition-all">
-                Já tenho conta
+              <button onClick={onGoToRegister}
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600/30 hover:border-emerald-500/70 text-emerald-400 hover:text-emerald-300 font-bold text-sm transition-all">
+                <HardHat className="h-4 w-4" />
+                Sou Técnico — Cadastro Gratuito
               </button>
             </div>
-            <p className="text-xs text-slate-600 mt-6">Sem cartão de crédito · Cancele quando quiser · LGPD compliant</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mt-6">
+              <p className="text-xs text-slate-600">Empresa: Sem cartão de crédito · Cancele quando quiser · LGPD compliant</p>
+              <span className="hidden sm:block text-slate-700">·</span>
+              <p className="text-xs text-slate-600">Técnico: Cadastro 100% gratuito · Pagamento PIX em 24h</p>
+            </div>
           </div>
         </div>
       </section>

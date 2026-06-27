@@ -108,7 +108,7 @@ type AppRole = 'admin' | 'company' | 'tech' | 'comercial' | 'manager' | 'custome
 export default function App() {
   const [dbLoaded, setDbLoaded] = useState(false);
   const [appView, setAppView] = useState<AppView>('landing');
-  const [onboardingData, setOnboardingData] = useState<{ company: any; user: any; plan: string } | null>(null);
+  const [onboardingData, setOnboardingData] = useState<{ company: any; user: any; plan: string; type?: 'company' | 'tech' } | null>(null);
 
   // Master state with LocalStorage synchronization
   const [role, setRole] = useState<AppRole>(() => {
@@ -666,8 +666,42 @@ export default function App() {
     return (
       <SelfServiceRegister
         onSuccess={(data) => {
-          setOnboardingData(data);
-          setAppView('onboarding');
+          if (data.type === 'tech') {
+            // Technician registration: create tech profile and go straight to tech portal
+            const newTech: Technician = {
+              id: `tech-reg-${Date.now()}`,
+              name: data.user.name,
+              email: data.user.email,
+              phone: data.user.phone || "",
+              city: data.user.city || "",
+              state: data.user.state || "SP",
+              specialties: data.user.specialties || [],
+              equipment: [],
+              availabilityDays: ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"],
+              availabilityHours: "08:00–18:00",
+              radiusKm: data.user.radiusKm || 50,
+              pixKey: data.user.pixKey || "",
+              pixType: data.user.pixType || "CPF",
+              bankName: data.user.bankName || "",
+              accountNumber: "",
+              rating: 5.0,
+              reviewsCount: 0,
+              completedJobsCount: 0,
+              documentsApproved: true,
+              signedContract: true,
+              status: "online",
+              badges: ["Novo Técnico"],
+              birthDate: "",
+              points: 100,
+              referralCredits: 0,
+            };
+            handleAddTechnician(newTech as any);
+            setRole('tech');
+            setAppView('app');
+          } else {
+            setOnboardingData(data);
+            setAppView('onboarding');
+          }
         }}
         onBack={() => setAppView('landing')}
       />
