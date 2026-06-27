@@ -54,7 +54,7 @@ export default function EnterpriseAuthModal({ role, onLoginSuccess, onCancel }: 
     }
   };
 
-  const currentMeta = roleMeta[role];
+  const currentMeta = roleMeta[role as keyof typeof roleMeta] ?? roleMeta['admin'];
   const RoleIcon = currentMeta.icon;
 
   const handlePreFill = () => {

@@ -3,7 +3,9 @@ import {
   Briefcase, Calendar, Users, TrendingUp, Sparkles, Plus, 
   ChevronRight, Phone, Mail, DollarSign, Activity, FileText, 
   Clock, CheckCircle, AlertCircle, Award, PlayCircle, Star,
-  BarChart2, Heart, BookOpen, CreditCard, Upload, Bot, Zap, Globe
+  BarChart2, Heart, BookOpen, CreditCard, Upload, Bot, Zap, Globe,
+  Search, Target, MapPin, Loader2, Building2, HardHat, Send,
+  Filter, Cpu, Wifi, Thermometer, Factory, Bolt, Camera, Sun, Wrench, X
 } from "lucide-react";
 import { LeadCompany, LeadTech, Company, Technician } from "../types";
 import ExecutiveDashboard from "./commercial/ExecutiveDashboard";
@@ -56,6 +58,128 @@ export default function ComercialPortal({
   const [proposalDetails, setProposalDetails] = useState("");
   const [aiProposalText, setAiProposalText] = useState("");
   const [isGeneratingProposal, setIsGeneratingProposal] = useState(false);
+
+  // ── IA GROWTH CRM — Captação por Região ──
+  const STATES_BR = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
+  const REGIONS_BR = [
+    { id: "Norte", label: "Norte", states: ["AM","PA","AC","RO","RR","AP","TO"] },
+    { id: "Nordeste", label: "Nordeste", states: ["MA","PI","CE","RN","PB","PE","AL","SE","BA"] },
+    { id: "Centro-Oeste", label: "Centro-Oeste", states: ["MT","MS","GO","DF"] },
+    { id: "Sudeste", label: "Sudeste", states: ["SP","RJ","MG","ES"] },
+    { id: "Sul", label: "Sul", states: ["PR","SC","RS"] },
+  ];
+  const COMPANY_SEGMENTS = ["Telecom & ISP","Energia Solar","CFTV & Segurança","Elétrica","Redes & TI","HVAC","Automação Industrial","Manutenção Predial","Infraestrutura"];
+  const TECH_SPECIALTIES_CRM = ["Telecom & ISP","CFTV","Energia Solar","Elétrica","Redes & TI","HVAC","Automação Industrial","Manutenção Geral"];
+
+  const [growthTargetType, setGrowthTargetType] = useState<'empresa' | 'tecnico'>('empresa');
+  const [growthSegment, setGrowthSegment] = useState("Telecom & ISP");
+  const [growthRegion, setGrowthRegion] = useState("");
+  const [growthState, setGrowthState] = useState("");
+  const [growthCity, setGrowthCity] = useState("");
+  const [growthPrompt, setGrowthPrompt] = useState("");
+  const [growthLoading, setGrowthLoading] = useState(false);
+  const [growthAiResponse, setGrowthAiResponse] = useState("");
+  const [growthResultCount, setGrowthResultCount] = useState(0);
+  const [showGrowthResult, setShowGrowthResult] = useState(false);
+
+  const handleGrowthSearch = async () => {
+    if (!growthState && !growthCity && !growthRegion && !growthPrompt.trim()) return;
+    setGrowthLoading(true);
+    setShowGrowthResult(false);
+    setGrowthAiResponse("");
+
+    const geo = [
+      growthCity && `cidade de ${growthCity}`,
+      growthState && `estado ${growthState}`,
+      growthRegion && `região ${growthRegion} do Brasil`,
+    ].filter(Boolean).join(", ");
+
+    const systemContext = growthTargetType === 'empresa'
+      ? `Você é o agente de Growth Engine da NexoraField AI. Sua tarefa é simular a prospecção de leads de EMPRESAS do segmento "${growthSegment}" ${geo ? `localizadas em: ${geo}` : ''} que precisam de serviços de campo e manutenção. ${growthPrompt ? `Instrução adicional: ${growthPrompt}` : ''}
+
+Retorne uma análise de mercado e gere exatamente 3 leads fictícios mas realistas no seguinte formato JSON dentro de \`\`\`json ... \`\`\`:
+[
+  { "name": "Nome Empresa", "segment": "${growthSegment}", "city": "Cidade", "state": "UF", "contactName": "Nome do Responsável", "role": "Cargo", "phone": "(XX) XXXXX-XXXX", "email": "email@empresa.com", "estimatedValue": 5000, "reason": "Por que esse lead é qualificado" },
+  ...
+]
+Antes do JSON, escreva 2-3 parágrafos de análise do mercado e potencial da região.`
+      : `Você é o agente de Growth Engine da NexoraField AI. Sua tarefa é simular a prospecção de TÉCNICOS independentes especializados em "${growthSegment}" ${geo ? `localizados em: ${geo}` : ''} que podem se cadastrar na plataforma. ${growthPrompt ? `Instrução adicional: ${growthPrompt}` : ''}
+
+Retorne uma análise e gere exatamente 3 técnicos fictícios mas realistas no seguinte formato JSON dentro de \`\`\`json ... \`\`\`:
+[
+  { "name": "Nome Técnico", "specialty": "${growthSegment}", "city": "Cidade", "state": "UF", "phone": "(XX) XXXXX-XXXX", "email": "email@mail.com", "experienceYears": 5, "certifications": ["NR-10"], "reason": "Por que esse técnico é qualificado" },
+  ...
+]
+Antes do JSON, escreva 2-3 parágrafos de análise do potencial de recrutamento na região.`;
+
+    try {
+      const res = await fetch("/api/ai/assist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: "comercial", message: systemContext }),
+      });
+      const data = await res.json();
+      const aiText: string = data.response || "";
+      setGrowthAiResponse(aiText);
+
+      // Parse JSON leads from response
+      const jsonMatch = aiText.match(/```json\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[1]);
+          if (Array.isArray(parsed)) {
+            if (growthTargetType === 'empresa') {
+              const newLeads: LeadCompany[] = parsed.map((l: any, i: number) => ({
+                id: `lead-growth-c-${Date.now()}-${i}`,
+                name: l.name || "Empresa Prospectada",
+                segment: l.segment || growthSegment,
+                city: l.city || growthCity || "Não informado",
+                state: l.state || growthState || "SP",
+                size: "Média" as const,
+                ratingStars: 4,
+                contactChannel: "WhatsApp",
+                contactStatus: "Interessado" as const,
+                phone: l.phone || "(00) 00000-0000",
+                email: l.email || "",
+                responsibleName: l.contactName || "A confirmar",
+                responsibleRole: l.role || "",
+                estimatedValue: l.estimatedValue || 4000,
+                createdAt: new Date().toISOString(),
+                historyLogs: [{ timestamp: new Date().toISOString(), message: `IA Growth: ${l.reason || 'Lead captado via prospecção territorial'}`, type: "system" as const }]
+              }));
+              setLeadCompanies(prev => [...newLeads, ...prev]);
+              setGrowthResultCount(newLeads.length);
+            } else {
+              const newTechs: LeadTech[] = parsed.map((t: any, i: number) => ({
+                id: `lead-growth-t-${Date.now()}-${i}`,
+                name: t.name || "Técnico Prospectado",
+                city: t.city || growthCity || "Não informado",
+                state: t.state || growthState || "SP",
+                specialty: t.specialty || growthSegment,
+                experienceYears: t.experienceYears || 3,
+                phone: t.phone || "(00) 00000-0000",
+                email: t.email || "",
+                classification: "Pleno" as const,
+                status: "Encontrado" as const,
+                onboardingPendingDocs: ["Documentos a verificar"],
+                createdAt: new Date().toISOString(),
+              }));
+              setLeadTechs(prev => [...newTechs, ...prev]);
+              setGrowthResultCount(newTechs.length);
+            }
+          }
+        } catch (_) { setGrowthResultCount(0); }
+      }
+
+      setShowGrowthResult(true);
+      onAddAuditLog({ type: 'growth', message: `IA Growth Engine: prospecção de ${growthTargetType === 'empresa' ? 'empresas' : 'técnicos'} em ${geo || 'Brasil'} — segmento ${growthSegment}.` });
+    } catch (e) {
+      setGrowthAiResponse("Erro ao conectar com o agente de IA. Verifique a conexão e tente novamente.");
+      setShowGrowthResult(true);
+    } finally {
+      setGrowthLoading(false);
+    }
+  };
 
   // Meeting scheduler state
   const [meetingLeadId, setMeetingLeadId] = useState<string | null>(null);
@@ -674,170 +798,282 @@ Próximos Passos recomendados:
 
       {/* AI GROWTH SOURCING ENGINE TAB */}
       {activeSubTab === 'growth_engine' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-slate-800">
-          
-          {/* Sourcing explanation & triggers */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            <div className="bg-gradient-to-br from-[#070b19] to-[#0e1634] p-6 rounded-3xl text-white border border-[#1b2654]/60 shadow-lg space-y-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-indigo-400 animate-pulse" />
-                <h3 className="text-md font-bold font-display">Neural Lead Scraping & Verification (Growth Sourcing)</h3>
-              </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Nossa IA comercial varre periodicamente redes corporativas, mapas e registros de infraestrutura de telecomunicações públicas para detectar operadoras locais, provedores regionais (ISPs), e redes de farmácias, mercados ou usinas solares necessitando de serviços de campo.
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-800/60">
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-500 uppercase font-mono font-bold block">Critério de Filtro para Empresas</span>
-                  <p className="text-xs font-semibold text-slate-300">ISPs Regionais, Usinas Solares, Monitoramento Patrimonial</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] text-slate-500 uppercase font-mono font-bold block">Critério de Filtro para Técnicos</span>
-                  <p className="text-xs font-semibold text-slate-300">Certificados CFTV, Fibra Óptica, Elétrica de Alta Tensão</p>
-                </div>
-              </div>
+        <div className="space-y-6">
 
-              <div className="pt-4 flex flex-col md:flex-row gap-2">
-                <button
-                  onClick={() => {
-                    const currentCount = leadCompanies.length;
-                    const mockedScraped = [
-                      {
-                        id: `lead-scraped-c-${Date.now()}`,
-                        name: "Vanguarda Telecom Fibra",
-                        segment: "Telecom",
-                        city: "Maceió",
-                        state: "AL",
-                        size: "Média" as const,
-                        ratingStars: 4,
-                        contactChannel: "WhatsApp",
-                        contactStatus: "Interessado" as const,
-                        phone: "(82) 99312-7643",
-                        email: "compras@vanguardafibra.com.br",
-                        responsibleName: "Sérgio Mendes",
-                        responsibleRole: "Gerente de Engenharia",
-                        estimatedValue: 5500,
-                        createdAt: new Date().toISOString(),
-                        historyLogs: [
-                          { timestamp: new Date().toISOString(), message: "IA detectou infraestrutura de fibra crescendo em Maceió via registros públicos.", type: "system" }
-                        ]
-                      }
-                    ];
-                    setLeadCompanies(prev => [...mockedScraped, ...prev]);
-                    onAddAuditLog({
-                      type: 'growth',
-                      message: `Growth Engine: Capturado 1 novo lead de Empresa qualificada em Maceió/AL via Social Sourcing.`
-                    });
-                    alert("Sucesso! Capturado 1 novo lead em Maceió/AL: Vanguarda Telecom Fibra.");
-                  }}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md shadow-indigo-600/10 cursor-pointer"
-                >
-                  <Sparkles className="h-4 w-4 text-indigo-200 animate-pulse" />
-                  <span>Sondar Empresas em Novos Estados 🌐</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    const mockedScrapedTech = {
-                      id: `lead-scraped-t-${Date.now()}`,
-                      name: "Ricardo Fonseca Pinheiro",
-                      city: "Porto Alegre",
-                      state: "RS",
-                      specialty: "Solar",
-                      experienceYears: 7,
-                      phone: "(51) 98321-4567",
-                      email: "ricardo.solar@live.com",
-                      classification: "Pleno" as const,
-                      status: "Encontrado" as const,
-                      onboardingPendingDocs: ["Certidão Reg. Técnico"],
-                      createdAt: new Date().toISOString()
-                    };
-                    setLeadTechs(prev => [mockedScrapedTech, ...prev]);
-                    onAddAuditLog({
-                      type: 'growth',
-                      message: `Growth Engine: Localizado profissional técnico certificado em Porto Alegre/RS.`
-                    });
-                    alert("Sucesso! Localizado técnico certificado em Porto Alegre/RS: Ricardo Fonseca Pinheiro.");
-                  }}
-                  className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/10 cursor-pointer"
-                >
-                  <Users className="h-4 w-4 text-purple-200" />
-                  <span>Sondar Técnicos Certificados 🛠️</span>
-                </button>
+          {/* Header banner */}
+          <div className="bg-gradient-to-br from-[#050918] to-[#0c1535] border border-indigo-900/60 rounded-3xl p-6 text-white shadow-xl">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-indigo-600/20 p-2 rounded-xl border border-indigo-500/30">
+                <Target className="h-5 w-5 text-indigo-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-black font-display tracking-tight">IA Growth CRM — Captação por Região</h3>
+                <p className="text-xs text-slate-400">Informe o perfil desejado e a localização. A IA prospecta e adiciona leads diretamente ao pipeline.</p>
+              </div>
+              <div className="ml-auto flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
+                <span className="h-1.5 w-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                <span className="text-[10px] text-emerald-400 font-bold">Gemini AI Ativo</span>
               </div>
             </div>
-
-            {/* Scraped Leads list preview */}
-            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-md space-y-4">
-              <h3 className="text-sm font-bold font-display text-slate-950">Histórico de Prospecção Recente</h3>
-              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                {leadCompanies.map(l => (
-                  <div key={l.id} className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex justify-between items-center text-xs">
-                    <div>
-                      <h4 className="font-bold text-slate-800">{l.name}</h4>
-                      <p className="text-[10px] text-slate-400">{l.city}/{l.state} • Responsável: {l.responsibleName || 'Não contatado'}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold font-mono text-slate-800">R$ {(l.estimatedValue || 3000).toLocaleString('pt-BR')}</p>
-                      <span className="text-[10px] text-indigo-600 font-bold uppercase">{l.contactStatus.replace('_', ' ')}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
           </div>
 
-          {/* Quick onboarding panel */}
-          <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-md space-y-4">
-            <h3 className="text-sm font-bold font-display text-slate-950 flex items-center gap-1.5">
-              <Activity className="h-4.5 w-4.5 text-indigo-600" />
-              Técnicos em Homologação
-            </h3>
-            
-            <p className="text-xs text-slate-500">
-              Profissionais prospectados ou indicados que estão na fila de envio e verificação de documentos de compliance técnico.
-            </p>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            <div className="space-y-3">
-              {leadTechs.filter(t => t.status !== 'Cadastro_Concluido').map(tech => (
-                <div key={tech.id} className="p-3 bg-slate-50 border border-slate-100 rounded-2xl space-y-2">
-                  <div className="flex justify-between items-center">
-                    <h4 className="font-bold text-xs text-slate-950 leading-tight">{tech.name}</h4>
-                    <span className="text-[9px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-bold font-mono">{tech.classification}</span>
-                  </div>
-                  <p className="text-[10px] text-slate-500">{tech.city} - {tech.state} • Exp: {tech.experienceYears} anos</p>
-                  
-                  {tech.onboardingPendingDocs && tech.onboardingPendingDocs.length > 0 && (
-                    <div className="text-[9px] text-red-500 font-semibold bg-red-50 p-1.5 rounded">
-                      Documento pendente: {tech.onboardingPendingDocs.join(", ")}
+            {/* ── LEFT: Configuration form ── */}
+            <div className="lg:col-span-2 space-y-5">
+
+              {/* Target type selector */}
+              <div className="bg-[#0a0d1e] border border-[#1b2654]/60 rounded-3xl p-5 space-y-4">
+                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">1. O que você quer captar?</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => { setGrowthTargetType('empresa'); setGrowthSegment("Telecom & ISP"); }}
+                    className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${growthTargetType === 'empresa' ? 'border-indigo-500 bg-indigo-600/20 text-white' : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-500'}`}
+                  >
+                    <Building2 className="h-6 w-6 text-indigo-400" />
+                    <div className="text-left">
+                      <p className="font-bold text-sm">Empresas</p>
+                      <p className="text-[10px] opacity-70">Leads comerciais B2B</p>
                     </div>
-                  )}
+                  </button>
+                  <button
+                    onClick={() => { setGrowthTargetType('tecnico'); setGrowthSegment("Telecom & ISP"); }}
+                    className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${growthTargetType === 'tecnico' ? 'border-purple-500 bg-purple-600/20 text-white' : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-500'}`}
+                  >
+                    <HardHat className="h-6 w-6 text-purple-400" />
+                    <div className="text-left">
+                      <p className="font-bold text-sm">Técnicos</p>
+                      <p className="text-[10px] opacity-70">Recrutamento de prestadores</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
 
-                  <div className="flex justify-between items-center pt-1 border-t border-slate-100">
-                    <span className="text-[9px] text-slate-400">Status: {tech.status.replace('_', ' ')}</span>
+              {/* Segment selector */}
+              <div className="bg-[#0a0d1e] border border-[#1b2654]/60 rounded-3xl p-5 space-y-4">
+                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">
+                  2. {growthTargetType === 'empresa' ? 'Segmento da empresa' : 'Especialidade do técnico'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(growthTargetType === 'empresa' ? COMPANY_SEGMENTS : TECH_SPECIALTIES_CRM).map(seg => (
                     <button
-                      onClick={() => {
-                        setLeadTechs(prev => prev.map(t => {
-                          if (t.id === tech.id) {
-                            return { ...t, status: 'Cadastro_Concluido', onboardingPendingDocs: [] };
-                          }
-                          return t;
-                        }));
-                        alert(`Sucesso! O técnico ${tech.name} foi validado e homologado para atuar no marketplace.`);
-                      }}
-                      className="text-[9px] bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-2 py-1 rounded transition-all cursor-pointer"
+                      key={seg}
+                      onClick={() => setGrowthSegment(seg)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold border-2 transition-all ${growthSegment === seg ? (growthTargetType === 'empresa' ? 'border-indigo-500 bg-indigo-600/20 text-indigo-200' : 'border-purple-500 bg-purple-600/20 text-purple-200') : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-500'}`}
                     >
-                      Aprovar Documentos
+                      {seg}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Geographic filters */}
+              <div className="bg-[#0a0d1e] border border-[#1b2654]/60 rounded-3xl p-5 space-y-4">
+                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">3. Onde buscar? (Região / Estado / Cidade)</p>
+
+                {/* Regions */}
+                <div>
+                  <label className="text-[10px] text-slate-500 font-bold block mb-2">Região do Brasil</label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => { setGrowthRegion(""); setGrowthState(""); }}
+                      className={`px-3 py-1 rounded-lg text-[11px] font-bold border transition-all ${!growthRegion ? 'border-indigo-500 bg-indigo-600/20 text-indigo-200' : 'border-slate-700 text-slate-500 hover:border-slate-500'}`}
+                    >
+                      Todo Brasil
+                    </button>
+                    {REGIONS_BR.map(r => (
+                      <button
+                        key={r.id}
+                        onClick={() => { setGrowthRegion(r.id); setGrowthState(""); }}
+                        className={`px-3 py-1 rounded-lg text-[11px] font-bold border transition-all ${growthRegion === r.id ? 'border-indigo-500 bg-indigo-600/20 text-indigo-200' : 'border-slate-700 text-slate-500 hover:border-slate-500'}`}
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {/* State */}
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-bold block mb-1.5">Estado (UF)</label>
+                    <select
+                      value={growthState}
+                      onChange={e => setGrowthState(e.target.value)}
+                      className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs px-3 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500 transition"
+                    >
+                      <option value="">Qualquer estado</option>
+                      {(growthRegion ? (REGIONS_BR.find(r => r.id === growthRegion)?.states || STATES_BR) : STATES_BR).map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {/* City */}
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-bold block mb-1.5">Cidade (opcional)</label>
+                    <input
+                      type="text"
+                      value={growthCity}
+                      onChange={e => setGrowthCity(e.target.value)}
+                      placeholder="Ex: São Paulo, Fortaleza…"
+                      className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs px-3 py-2.5 rounded-xl focus:outline-none focus:border-indigo-500 transition placeholder-slate-600"
+                    />
+                  </div>
+                </div>
+
+                {/* Summary tag */}
+                {(growthRegion || growthState || growthCity) && (
+                  <div className="flex items-center gap-2 bg-indigo-600/10 border border-indigo-500/30 rounded-xl px-3 py-2">
+                    <MapPin className="h-3.5 w-3.5 text-indigo-400 flex-shrink-0" />
+                    <span className="text-[11px] text-indigo-300">
+                      Buscando em: {[growthCity, growthState && `estado ${growthState}`, growthRegion && `região ${growthRegion}`].filter(Boolean).join(" · ")}
+                    </span>
+                    <button onClick={() => { setGrowthRegion(""); setGrowthState(""); setGrowthCity(""); }} className="ml-auto text-slate-500 hover:text-slate-300">
+                      <X className="h-3 w-3" />
                     </button>
                   </div>
+                )}
+              </div>
+
+              {/* AI Prompt */}
+              <div className="bg-[#0a0d1e] border border-[#1b2654]/60 rounded-3xl p-5 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Bot className="h-4 w-4 text-indigo-400" />
+                  <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider">4. Descreva para a IA o que você busca (opcional)</p>
                 </div>
-              ))}
+                <textarea
+                  value={growthPrompt}
+                  onChange={e => setGrowthPrompt(e.target.value)}
+                  rows={3}
+                  placeholder={growthTargetType === 'empresa'
+                    ? 'Ex: "Quero empresas de energia solar com mais de 10 funcionários que ainda não usam software de gestão de campo. Prefiro empresas com sede em capitais."'
+                    : 'Ex: "Busco técnicos com certificação NR-10 e NR-35 e pelo menos 5 anos de experiência em fibra óptica. Preciso de técnicos disponíveis nos finais de semana."'}
+                  className="w-full bg-slate-800/60 border border-slate-700 text-slate-200 text-xs px-4 py-3 rounded-xl focus:outline-none focus:border-indigo-500 resize-none transition placeholder-slate-600"
+                />
+                <p className="text-[10px] text-slate-600">A IA usa sua descrição para personalizar a análise de mercado e os perfis gerados.</p>
+              </div>
+
+              {/* Action button */}
+              <button
+                onClick={handleGrowthSearch}
+                disabled={growthLoading || (!growthState && !growthCity && !growthRegion && !growthPrompt.trim())}
+                className={`w-full flex items-center justify-center gap-2.5 py-4 rounded-2xl font-bold text-sm transition-all shadow-lg ${
+                  growthLoading
+                    ? 'bg-indigo-700/60 text-indigo-300 cursor-wait'
+                    : (!growthState && !growthCity && !growthRegion && !growthPrompt.trim())
+                    ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/30 hover:shadow-indigo-500/40'
+                }`}
+              >
+                {growthLoading ? (
+                  <><Loader2 className="h-5 w-5 animate-spin" /> Agente de IA prospectando leads…</>
+                ) : (
+                  <><Search className="h-5 w-5" /> Prospectar com IA Agora</>
+                )}
+              </button>
+
+              {/* AI Result */}
+              {showGrowthResult && (
+                <div className="bg-[#080d1e] border border-indigo-800/50 rounded-3xl p-5 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-indigo-400 animate-pulse" />
+                    <h4 className="text-sm font-bold text-white">Resultado da Prospecção IA</h4>
+                    {growthResultCount > 0 && (
+                      <span className="ml-auto bg-emerald-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
+                        +{growthResultCount} {growthTargetType === 'empresa' ? 'empresas' : 'técnicos'} adicionados ao pipeline
+                      </span>
+                    )}
+                  </div>
+                  {growthAiResponse ? (
+                    <div className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap max-h-72 overflow-y-auto pr-1">
+                      {growthAiResponse.replace(/```json[\s\S]*?```/g, '').trim()}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-red-400">Erro ao gerar resposta. Tente novamente.</p>
+                  )}
+                  {growthResultCount > 0 && (
+                    <p className="text-[11px] text-emerald-400 font-semibold">
+                      ✓ {growthResultCount} {growthTargetType === 'empresa' ? 'novas empresas adicionadas ao Pipeline & CRM' : 'novos técnicos adicionados à fila de homologação'}. Acesse a aba "Pipeline & CRM" para ver.
+                    </p>
+                  )}
+                </div>
+              )}
+
+            </div>
+
+            {/* ── RIGHT: sidebar ── */}
+            <div className="space-y-5">
+
+              {/* Stats */}
+              <div className="bg-[#0a0d1e] border border-[#1b2654]/60 rounded-3xl p-5 space-y-3">
+                <h4 className="text-xs font-bold text-slate-300">Pipeline Atual</h4>
+                <div className="space-y-2">
+                  {[
+                    { label: "Empresas no pipeline", val: leadCompanies.length, color: "text-indigo-400" },
+                    { label: "Técnicos prospectados", val: leadTechs.length, color: "text-purple-400" },
+                    { label: "Clientes convertidos", val: leadCompanies.filter(l => l.contactStatus === 'Cliente').length, color: "text-emerald-400" },
+                  ].map(s => (
+                    <div key={s.label} className="flex justify-between items-center text-xs">
+                      <span className="text-slate-500">{s.label}</span>
+                      <span className={`font-black text-lg ${s.color}`}>{s.val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Histórico de Prospecção */}
+              <div className="bg-[#0a0d1e] border border-[#1b2654]/60 rounded-3xl p-5 space-y-3">
+                <h4 className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Activity className="h-3.5 w-3.5 text-indigo-400" /> Histórico Recente
+                </h4>
+                <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
+                  {leadCompanies.slice(0, 6).map(l => (
+                    <div key={l.id} className="p-2.5 bg-slate-800/50 rounded-xl text-xs border border-slate-700/50">
+                      <p className="font-bold text-slate-200 truncate">{l.name}</p>
+                      <p className="text-[10px] text-slate-500">{l.city}/{l.state} · {l.segment}</p>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-[9px] text-indigo-400 font-bold uppercase">{l.contactStatus.replace('_',' ')}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">R$ {(l.estimatedValue||3000).toLocaleString('pt-BR')}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {leadCompanies.length === 0 && (
+                    <p className="text-[11px] text-slate-600 text-center py-4">Nenhum lead ainda. Use o painel ao lado para prospectar.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Técnicos em Homologação */}
+              <div className="bg-[#0a0d1e] border border-[#1b2654]/60 rounded-3xl p-5 space-y-3">
+                <h4 className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <HardHat className="h-3.5 w-3.5 text-purple-400" /> Técnicos em Homologação
+                </h4>
+                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                  {leadTechs.filter(t => t.status !== 'Cadastro_Concluido').slice(0, 5).map(tech => (
+                    <div key={tech.id} className="p-2.5 bg-slate-800/50 rounded-xl border border-slate-700/50 space-y-1.5">
+                      <div className="flex justify-between items-start">
+                        <p className="font-bold text-xs text-slate-200 leading-tight">{tech.name}</p>
+                        <span className="text-[9px] bg-purple-900/60 text-purple-300 px-1.5 py-0.5 rounded font-bold">{tech.classification}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-500">{tech.city}/{tech.state} · {tech.experienceYears}a exp.</p>
+                      <button
+                        onClick={() => {
+                          setLeadTechs(prev => prev.map(t => t.id === tech.id ? { ...t, status: 'Cadastro_Concluido', onboardingPendingDocs: [] } : t));
+                        }}
+                        className="w-full text-[9px] bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 rounded-lg transition-all"
+                      >
+                        Aprovar Documentos ✓
+                      </button>
+                    </div>
+                  ))}
+                  {leadTechs.filter(t => t.status !== 'Cadastro_Concluido').length === 0 && (
+                    <p className="text-[11px] text-slate-600 text-center py-4">Nenhum técnico pendente.</p>
+                  )}
+                </div>
+              </div>
+
             </div>
           </div>
-
         </div>
       )}
 

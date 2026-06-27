@@ -1,0 +1,491 @@
+Segue um prompt completo e técnico para solicitar a correção de toda a responsividade da plataforma, garantindo funcionamento perfeito em smartphones, tablets, notebooks e desktops.
+
+---
+
+# PROMPT — RESPONSIVIDADE TOTAL (MOBILE • TABLET • DESKTOP)
+
+Realize uma auditoria completa da interface (UI), experiência do usuário (UX) e arquitetura Front-End de toda a plataforma.
+
+O objetivo é tornar **100% da plataforma totalmente responsiva**, garantindo perfeita utilização em smartphones, tablets, notebooks e desktops, sem perda de funcionalidades ou cortes na interface.
+
+## Objetivos
+
+Corrigir toda a responsividade da plataforma.
+
+Nenhum componente pode ultrapassar a largura da tela.
+
+Nenhum texto pode ficar cortado.
+
+Nenhum botão pode sair da área visível.
+
+Nenhuma janela pode abrir maior que a tela.
+
+Todos os módulos devem funcionar igualmente em:
+
+* Smartphones Android
+* iPhone
+* Tablets Android
+* iPad
+* Notebook
+* Desktop
+* Monitores Ultrawide
+
+---
+
+# Problema Principal
+
+O módulo de **Chat de Chamados (Help Desk / Tickets)** está apresentando problemas graves em dispositivos móveis.
+
+Problemas encontrados:
+
+* O chat está sendo cortado.
+* Existe rolagem horizontal.
+* As mensagens ultrapassam a tela.
+* O painel lateral ocupa muito espaço.
+* O campo de digitação fica escondido.
+* Botões ficam fora da tela.
+* A conversa não ocupa toda a largura disponível.
+* Em tablets o layout permanece como desktop.
+
+Corrigir completamente esse módulo.
+
+---
+
+# Novo Layout do Chat
+
+Em telas pequenas (mobile):
+
+### Remover Layout Desktop
+
+Não utilizar duas colunas.
+
+Ao abrir um chamado:
+
+A tela inteira deve mostrar somente a conversa.
+
+Exatamente como:
+
+* WhatsApp
+* Telegram
+* Messenger
+* Discord Mobile
+
+---
+
+### Lista de Chamados
+
+Ao entrar no módulo:
+
+Mostrar somente:
+
+Lista dos chamados.
+
+Ao tocar em um chamado:
+
+Abrir a conversa em tela cheia.
+
+Adicionar botão:
+
+← Voltar
+
+para retornar à lista.
+
+---
+
+### Campo de Mensagem
+
+Fixar no rodapé.
+
+Sempre visível.
+
+Mesmo com teclado aberto.
+
+Deve conter:
+
+* Campo de texto expansível
+* Botão enviar
+* Botão anexar arquivo
+* Emoji (caso exista)
+
+Nunca pode desaparecer.
+
+---
+
+### Cabeçalho
+
+Mostrar:
+
+* Nome do chamado
+* Status
+* Prioridade
+* Responsável
+* Botão voltar
+
+Compacto.
+
+---
+
+### Mensagens
+
+As mensagens devem:
+
+Quebrar linha automaticamente.
+
+Nunca ultrapassar a largura.
+
+Suportar:
+
+* textos longos
+* links
+* imagens
+* PDFs
+* vídeos
+* arquivos
+
+Utilizar largura máxima de 75%.
+
+---
+
+### Rolagem
+
+Apenas:
+
+Rolagem vertical.
+
+Nunca permitir:
+
+scroll horizontal.
+
+---
+
+# Tablet
+
+Criar layout exclusivo.
+
+Não utilizar o layout desktop reduzido.
+
+Quando largura entre:
+
+768px e 1024px
+
+Permitir:
+
+Lista lateral estreita
+
+*
+
+Chat maior.
+
+Painéis ajustáveis.
+
+---
+
+# Desktop
+
+Manter:
+
+Layout atual.
+
+Porém:
+
+Melhorar proporções.
+
+Painéis redimensionáveis.
+
+---
+
+# Responsividade Geral da Plataforma
+
+Realizar auditoria completa em TODOS os módulos.
+
+Verificar:
+
+## Menus
+
+Nunca cortar.
+
+Nunca esconder itens importantes.
+
+Criar menu hambúrguer no mobile.
+
+Menu lateral recolhível.
+
+---
+
+## Cards
+
+Todos os cards devem:
+
+Redimensionar automaticamente.
+
+Empilhar no mobile.
+
+Grid responsivo.
+
+---
+
+## Dashboards
+
+Gráficos responsivos.
+
+KPIs adaptáveis.
+
+Widgets reorganizados.
+
+---
+
+## Tabelas
+
+Converter automaticamente para:
+
+Cards
+
+ou
+
+Tabela com scroll interno.
+
+Nunca quebrar layout.
+
+---
+
+## Formulários
+
+Todos os campos:
+
+100% largura no celular.
+
+Agrupados em coluna.
+
+Labels legíveis.
+
+Espaçamento adequado.
+
+---
+
+## Botões
+
+Tamanho mínimo:
+
+44px
+
+Compatível com toque.
+
+Nunca sobrepostos.
+
+---
+
+## Modais
+
+Nunca maiores que:
+
+90vw
+
+90vh
+
+Adicionar:
+
+scroll interno.
+
+---
+
+## Calendários
+
+Responsivos.
+
+Modo agenda no celular.
+
+Modo mensal no desktop.
+
+---
+
+## Uploads
+
+Área de upload adaptável.
+
+Suporte para arrastar arquivos no desktop.
+
+Seleção simplificada no mobile.
+
+---
+
+## Editor de Texto
+
+Toolbar adaptável.
+
+Menus recolhíveis.
+
+Sem overflow.
+
+---
+
+## Notificações
+
+Responsivas.
+
+Posicionamento inteligente.
+
+Sem esconder conteúdo.
+
+---
+
+## Sidebar
+
+Desktop:
+
+Expandida.
+
+Tablet:
+
+Colapsável.
+
+Mobile:
+
+Oculta.
+
+Abrir via menu.
+
+---
+
+## Navbar
+
+Responsiva.
+
+Nunca quebrar.
+
+Itens reorganizados.
+
+---
+
+## Breadcrumb
+
+Ocultar níveis desnecessários em telas pequenas.
+
+---
+
+# Breakpoints
+
+Implementar:
+
+Extra Small
+
+320px
+
+Small
+
+375px
+
+Medium
+
+425px
+
+Large
+
+768px
+
+Tablet Landscape
+
+1024px
+
+Desktop
+
+1280px
+
+Wide
+
+1440px
+
+UltraWide
+
+1920px+
+
+---
+
+# CSS Responsivo
+
+Eliminar:
+
+Larguras fixas.
+
+Utilizar:
+
+* Flexbox
+* CSS Grid
+* Clamp()
+* Min()
+* Max()
+* Aspect Ratio
+* Container Queries (quando suportado)
+
+---
+
+# Performance
+
+Evitar:
+
+Re-renderizações.
+
+Imagens enormes.
+
+Componentes duplicados.
+
+Carregamentos desnecessários.
+
+---
+
+# Acessibilidade
+
+Garantir:
+
+Toque confortável.
+
+Contraste adequado.
+
+Fontes legíveis.
+
+Zoom funcional.
+
+Compatibilidade com leitores de tela.
+
+Navegação por teclado.
+
+---
+
+# Testes Obrigatórios
+
+Validar em:
+
+## Smartphones
+
+* Android pequeno
+* Android grande
+* iPhone SE
+* iPhone 13
+* iPhone 15 Pro Max
+
+## Tablets
+
+* iPad
+* iPad Pro
+* Galaxy Tab
+
+## Desktop
+
+* 1366×768
+* 1920×1080
+* 2560×1440
+* 3440×1440
+
+---
+
+# Critérios de Aceitação
+
+A implementação somente será considerada concluída quando:
+
+* Nenhum componente ultrapassar os limites da tela.
+* Não houver rolagem horizontal em qualquer resolução.
+* Todos os textos permanecerem legíveis e completos.
+* O chat de chamados funcionar em tela cheia no mobile, com navegação semelhante ao WhatsApp ou Telegram.
+* Menus, formulários, dashboards, tabelas, gráficos, modais e demais módulos estiverem totalmente adaptados a smartphones, tablets, notebooks e desktops.
+* A interface mantiver identidade visual consistente em todos os dispositivos.
+* Todas as funcionalidades forem preservadas, sem regressões.
+* A plataforma atingir um nível de responsividade compatível com aplicações modernas de padrão enterprise (PWA/SaaS), proporcionando uma experiência fluida, intuitiva e otimizada em qualquer tamanho de tela.
