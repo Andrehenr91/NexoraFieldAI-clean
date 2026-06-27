@@ -258,6 +258,13 @@ export default function App() {
     } catch (e) { console.warn("Failed to persist company:", e); }
   };
 
+  const handleUpdateTechnician = async (updatedTech: Technician) => {
+    setTechnicians(prev => prev.map(t => t.id === updatedTech.id ? updatedTech : t));
+    try {
+      await apiFetch(`/api/technicians/${updatedTech.id}`, { method: "PATCH", body: JSON.stringify(updatedTech) });
+    } catch (e) { console.warn("Failed to persist technician update:", e); }
+  };
+
   const handleAddTechnician = async (newTech: Omit<Technician, 'id' | 'completedJobsCount' | 'reviewsCount' | 'rating' | 'documentsApproved' | 'signedContract'>) => {
     const tech: Technician = {
       ...newTech,
@@ -794,6 +801,7 @@ export default function App() {
                 onAddEvidence={handleAddEvidence}
                 onCompleteService={handleCompleteService}
                 onAddAuditLog={handleAddAuditLog}
+                onUpdateTechnician={handleUpdateTechnician}
               />
             )}
 

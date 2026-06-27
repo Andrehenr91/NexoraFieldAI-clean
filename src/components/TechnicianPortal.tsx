@@ -4,7 +4,9 @@ import {
   HardHat, DollarSign, Calendar, Star, Compass, CheckSquare, 
   ChevronRight, ChevronLeft, MapPin, Sparkles, Upload, 
   Award, ShieldAlert, CheckCircle, ArrowRight, UserCheck, 
-  Briefcase, Landmark, BookOpen, Loader2, Trophy, Users, Share2, Coins, Flame
+  Briefcase, Landmark, BookOpen, Loader2, Trophy, Users, Share2, Coins, Flame,
+  User, Wrench, QrCode, Clock, Save, Check, X, Edit3, Wifi, Sun,
+  Cpu, Thermometer, Factory, Camera, Bolt, Phone, Mail, ChevronDown
 } from "lucide-react";
 import { CATEGORIES, SPECIALTIES, EQUIPMENTS } from "../data";
 
@@ -20,6 +22,7 @@ interface TechnicianPortalProps {
   onAddEvidence: (ticketId: string, photo: string) => void;
   onCompleteService: (ticketId: string, signature: string, laudo: string, fraudAlerts: string[]) => void;
   onAddAuditLog: (log: any) => void;
+  onUpdateTechnician?: (tech: Technician) => void;
 }
 
 export default function TechnicianPortal({
@@ -33,9 +36,10 @@ export default function TechnicianPortal({
   onUpdateChecklist,
   onAddEvidence,
   onCompleteService,
-  onAddAuditLog
+  onAddAuditLog,
+  onUpdateTechnician,
 }: TechnicianPortalProps) {
-  const [activeTab, setActiveTab] = useState<'dash' | 'registro' | 'chamado_ativo' | 'gamification' | 'indicacoes'>('dash');
+  const [activeTab, setActiveTab] = useState<'dash' | 'registro' | 'chamado_ativo' | 'gamification' | 'indicacoes' | 'perfil'>('dash');
   
   // Referral form local state
   const [refName, setRefName] = useState("");
@@ -108,6 +112,60 @@ export default function TechnicianPortal({
   const [profileBank, setProfileBank] = useState(currentTech.bankName);
   const [profileAgency, setProfileAgency] = useState(currentTech.agency);
   const [profileAccount, setProfileAccount] = useState(currentTech.accountNumber);
+
+  // ── MEU PERFIL state ──
+  const STATES_BR = ["AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT","PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"];
+  const ALL_DAYS = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"];
+  const SPECIALTY_OPTIONS = [
+    { id: "Telecom & ISP", icon: Wifi }, { id: "CFTV", icon: Camera }, { id: "Energia Solar", icon: Sun },
+    { id: "Elétrica", icon: Bolt }, { id: "Redes & TI", icon: Cpu }, { id: "HVAC", icon: Thermometer },
+    { id: "Automação Industrial", icon: Factory }, { id: "Manutenção Geral", icon: Wrench },
+  ];
+  const PIX_TYPES = ["CPF", "E-mail", "Telefone", "Chave Aleatória", "CNPJ"];
+
+  const [perfSpecialties, setPerfSpecialties] = useState<string[]>(currentTech.specialties ?? []);
+  const [perfRadiusKm, setPerfRadiusKm] = useState(String(currentTech.radiusKm ?? 50));
+  const [perfStatus, setPerfStatus] = useState<'online' | 'offline' | 'busy'>(currentTech.status ?? 'online');
+  const [perfDays, setPerfDays] = useState<string[]>(currentTech.availabilityDays ?? ["Segunda","Terça","Quarta","Quinta","Sexta"]);
+  const [perfHours, setPerfHours] = useState(currentTech.availabilityHours ?? "08:00–18:00");
+  const [perfPixKey, setPerfPixKey] = useState(currentTech.pixKey ?? "");
+  const [perfPixType, setPerfPixType] = useState(currentTech.pixType ?? "CPF");
+  const [perfBank, setPerfBank] = useState(currentTech.bankName ?? "");
+  const [perfPhone, setPerfPhone] = useState(currentTech.phone ?? "");
+  const [perfEmail, setPerfEmail] = useState(currentTech.email ?? "");
+  const [perfCity, setPerfCity] = useState(currentTech.city ?? "");
+  const [perfStateVal, setPerfStateVal] = useState(currentTech.state ?? "SP");
+  const [perfSaving, setPerfSaving] = useState(false);
+  const [perfSaved, setPerfSaved] = useState(false);
+  const [perfActiveSection, setPerfActiveSection] = useState<'especialidades' | 'disponibilidade' | 'bancario' | 'contato'>('especialidades');
+
+  const handleSaveProfile = async () => {
+    setPerfSaving(true);
+    await new Promise(r => setTimeout(r, 900));
+    const updated: Technician = {
+      ...currentTech,
+      specialties: perfSpecialties,
+      radiusKm: parseInt(perfRadiusKm) || 50,
+      status: perfStatus,
+      availabilityDays: perfDays,
+      availabilityHours: perfHours,
+      pixKey: perfPixKey,
+      pixType: perfPixType,
+      bankName: perfBank,
+      phone: perfPhone,
+      email: perfEmail,
+      city: perfCity,
+      state: perfStateVal,
+    };
+    onUpdateTechnician?.(updated);
+    setPerfSaving(false);
+    setPerfSaved(true);
+    setTimeout(() => setPerfSaved(false), 3000);
+    onAddAuditLog({ type: 'assist', message: `Técnico ${currentTech.name} atualizou o perfil: especialidades, disponibilidade e dados bancários.` });
+  };
+
+  const togglePerfDay = (d: string) => setPerfDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
+  const togglePerfSpecialty = (s: string) => setPerfSpecialties(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
   const handleAcceptOportunity = (ticketId: string) => {
     onUpdateTicketStatus(ticketId, 'Aceito');
@@ -318,6 +376,12 @@ export default function TechnicianPortal({
             className={`px-3.5 py-1.5 rounded-lg font-semibold transition-all ${activeTab === 'indicacoes' ? 'bg-emerald-600 text-white shadow shadow-emerald-600/10' : 'text-slate-400 hover:text-slate-200'}`}
           >
             Indique e Ganhe! 📣
+          </button>
+          <button
+            onClick={() => setActiveTab('perfil')}
+            className={`px-3.5 py-1.5 rounded-lg font-semibold transition-all ${activeTab === 'perfil' ? 'bg-emerald-600 text-white shadow shadow-emerald-600/10' : 'text-slate-400 hover:text-slate-200'}`}
+          >
+            Meu Perfil 👤
           </button>
           {allocatedTicket && (
             <button
@@ -1430,6 +1494,295 @@ export default function TechnicianPortal({
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─────────────────────────────────────────────────────────────────────── */}
+      {/* MEU PERFIL TAB                                                         */}
+      {/* ─────────────────────────────────────────────────────────────────────── */}
+      {activeTab === 'perfil' && (
+        <div className="space-y-5">
+          {/* Header */}
+          <div className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-3xl p-6 text-white shadow-xl shadow-emerald-900/30">
+            <div className="flex items-center gap-4">
+              <img src={currentTech.avatar} alt={currentTech.name} className="h-16 w-16 rounded-2xl object-cover border-2 border-white/30 shadow-lg" />
+              <div className="flex-1">
+                <h3 className="text-xl font-bold font-display">{currentTech.name}</h3>
+                <p className="text-emerald-100 text-xs mt-0.5">{currentTech.specialties.join(" · ")}</p>
+                <div className="flex gap-2 mt-2">
+                  {(['online', 'busy', 'offline'] as const).map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setPerfStatus(s)}
+                      className={`text-[10px] font-bold px-3 py-1 rounded-full transition-all ${perfStatus === s ? 'bg-white text-emerald-700 shadow' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                    >
+                      {s === 'online' ? '🟢 Online' : s === 'busy' ? '🟡 Ocupado' : '⚫ Offline'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-emerald-100 text-[10px]">Rating</div>
+                <div className="text-2xl font-bold">⭐ {currentTech.rating.toFixed(1)}</div>
+                <div className="text-emerald-100 text-[10px]">{currentTech.completedJobsCount} jobs</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section tabs */}
+          <div className="bg-[#0a0c14] border border-slate-800/80 rounded-2xl p-1.5 flex gap-1">
+            {([
+              { id: 'especialidades', label: 'Especialidades & Raio', icon: Wrench },
+              { id: 'disponibilidade', label: 'Disponibilidade', icon: Clock },
+              { id: 'bancario', label: 'Dados Bancários', icon: Landmark },
+              { id: 'contato', label: 'Contato & Cidade', icon: Phone },
+            ] as const).map(sec => (
+              <button
+                key={sec.id}
+                onClick={() => setPerfActiveSection(sec.id)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-semibold transition-all ${perfActiveSection === sec.id ? 'bg-emerald-600 text-white shadow shadow-emerald-600/20' : 'text-slate-400 hover:text-slate-200'}`}
+              >
+                <sec.icon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{sec.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* ── Especialidades & Raio ── */}
+          {perfActiveSection === 'especialidades' && (
+            <div className="bg-[#0a0c14] border border-slate-800/80 rounded-3xl p-6 space-y-5">
+              <div>
+                <h4 className="text-sm font-bold text-slate-200 mb-1">Especialidades de Atuação</h4>
+                <p className="text-[11px] text-slate-500 mb-4">Selecione todas as áreas em que você presta serviço.</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {SPECIALTY_OPTIONS.map(opt => {
+                    const IconComp = opt.icon;
+                    const selected = perfSpecialties.includes(opt.id);
+                    return (
+                      <button
+                        key={opt.id}
+                        onClick={() => togglePerfSpecialty(opt.id)}
+                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${selected ? 'border-emerald-500 bg-emerald-600/20 text-emerald-300' : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-500'}`}
+                      >
+                        <IconComp className="h-6 w-6" />
+                        <span className="text-[10px] font-bold text-center leading-tight">{opt.id}</span>
+                        {selected && <span className="text-emerald-400 text-[9px] font-bold">✓ Ativo</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="text-sm font-bold text-slate-200">Raio de Atendimento</h4>
+                  <span className="text-emerald-400 font-bold text-sm">{perfRadiusKm} km</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mb-3">Define a distância máxima que você aceita chamados.</p>
+                <input
+                  type="range"
+                  min={10}
+                  max={500}
+                  step={10}
+                  value={parseInt(perfRadiusKm)}
+                  onChange={e => setPerfRadiusKm(e.target.value)}
+                  className="w-full accent-emerald-500"
+                />
+                <div className="flex justify-between text-[10px] text-slate-600 mt-1">
+                  <span>10 km</span><span>250 km</span><span>500 km</span>
+                </div>
+                <div className="mt-3 bg-slate-800/60 rounded-xl px-4 py-2.5 text-[11px] text-slate-400 flex items-center gap-2">
+                  <MapPin className="h-3.5 w-3.5 text-emerald-400" />
+                  Você receberá chamados em um raio de <strong className="text-emerald-300 ml-1">{perfRadiusKm} km</strong> ao redor de {perfCity || currentTech.city || 'sua cidade'}.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Disponibilidade ── */}
+          {perfActiveSection === 'disponibilidade' && (
+            <div className="bg-[#0a0c14] border border-slate-800/80 rounded-3xl p-6 space-y-5">
+              <div>
+                <h4 className="text-sm font-bold text-slate-200 mb-1">Dias de Trabalho</h4>
+                <p className="text-[11px] text-slate-500 mb-4">Marque os dias em que você está disponível para chamados.</p>
+                <div className="flex gap-2 flex-wrap">
+                  {ALL_DAYS.map(d => {
+                    const active = perfDays.includes(d);
+                    return (
+                      <button
+                        key={d}
+                        onClick={() => togglePerfDay(d)}
+                        className={`px-4 py-2 rounded-xl text-xs font-bold border-2 transition-all ${active ? 'border-emerald-500 bg-emerald-600/20 text-emerald-300' : 'border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-500'}`}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-slate-200 mb-1">Horário de Atendimento</h4>
+                <p className="text-[11px] text-slate-500 mb-3">Ex: 08:00–18:00 · 24h · Comercial</p>
+                <input
+                  type="text"
+                  value={perfHours}
+                  onChange={e => setPerfHours(e.target.value)}
+                  placeholder="Ex: 07:00–19:00"
+                  className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm px-4 py-2.5 rounded-xl focus:outline-none focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div className="bg-slate-800/60 rounded-xl p-4 text-[11px] text-slate-400">
+                <p className="font-bold text-slate-300 mb-1">Resumo de disponibilidade</p>
+                <p>{perfDays.length > 0 ? perfDays.join(", ") : "Nenhum dia selecionado"} · {perfHours || "–"}</p>
+              </div>
+            </div>
+          )}
+
+          {/* ── Dados Bancários ── */}
+          {perfActiveSection === 'bancario' && (
+            <div className="bg-[#0a0c14] border border-slate-800/80 rounded-3xl p-6 space-y-5">
+              {/* Split info */}
+              <div className="bg-emerald-600/10 border border-emerald-500/30 rounded-2xl p-4 flex items-center gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-black text-emerald-400">85%</div>
+                  <div className="text-[10px] text-slate-400">Técnico</div>
+                </div>
+                <div className="flex-1 bg-slate-700/50 h-2 rounded-full overflow-hidden">
+                  <div className="bg-emerald-500 h-full rounded-full" style={{ width: '85%' }} />
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-black text-slate-400">15%</div>
+                  <div className="text-[10px] text-slate-400">Plataforma</div>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500 -mt-2">Você recebe 85% do valor de cada chamado diretamente via PIX.</p>
+
+              <div>
+                <h4 className="text-sm font-bold text-slate-200 mb-3">Chave PIX para Recebimento</h4>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Tipo de Chave</label>
+                    <select
+                      value={perfPixType}
+                      onChange={e => setPerfPixType(e.target.value)}
+                      className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs px-3 py-2.5 rounded-xl focus:outline-none focus:border-emerald-500"
+                    >
+                      {PIX_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 block mb-1">Chave PIX</label>
+                    <input
+                      type="text"
+                      value={perfPixKey}
+                      onChange={e => setPerfPixKey(e.target.value)}
+                      placeholder={perfPixType === 'CPF' ? '000.000.000-00' : perfPixType === 'E-mail' ? 'voce@email.com' : perfPixType === 'Telefone' ? '(11) 99999-9999' : 'chave-pix'}
+                      className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs px-3 py-2.5 rounded-xl focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold text-slate-200 mb-3">Dados Bancários (Opcional)</h4>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1">Banco</label>
+                  <input
+                    type="text"
+                    value={perfBank}
+                    onChange={e => setPerfBank(e.target.value)}
+                    placeholder="Ex: Nubank, Itaú, Bradesco…"
+                    className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs px-3 py-2.5 rounded-xl focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-slate-800/60 rounded-xl p-4 flex items-center gap-3 text-[11px] text-slate-400">
+                <QrCode className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                <span>Os pagamentos são processados automaticamente após a aprovação do laudo pelo cliente. Prazo: até 2 dias úteis.</span>
+              </div>
+            </div>
+          )}
+
+          {/* ── Contato & Cidade ── */}
+          {perfActiveSection === 'contato' && (
+            <div className="bg-[#0a0c14] border border-slate-800/80 rounded-3xl p-6 space-y-4">
+              <h4 className="text-sm font-bold text-slate-200 mb-1">Dados de Contato</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1.5">
+                    <Phone className="h-3 w-3 inline mr-1" />Celular / WhatsApp
+                  </label>
+                  <input
+                    type="text"
+                    value={perfPhone}
+                    onChange={e => setPerfPhone(e.target.value)}
+                    placeholder="(11) 99999-9999"
+                    className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm px-4 py-2.5 rounded-xl focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1.5">
+                    <Mail className="h-3 w-3 inline mr-1" />E-mail
+                  </label>
+                  <input
+                    type="email"
+                    value={perfEmail}
+                    onChange={e => setPerfEmail(e.target.value)}
+                    placeholder="voce@email.com"
+                    className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm px-4 py-2.5 rounded-xl focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1.5">
+                    <MapPin className="h-3 w-3 inline mr-1" />Cidade
+                  </label>
+                  <input
+                    type="text"
+                    value={perfCity}
+                    onChange={e => setPerfCity(e.target.value)}
+                    placeholder="São Paulo"
+                    className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm px-4 py-2.5 rounded-xl focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-500 block mb-1.5">Estado</label>
+                  <select
+                    value={perfStateVal}
+                    onChange={e => setPerfStateVal(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm px-4 py-2.5 rounded-xl focus:outline-none focus:border-emerald-500"
+                  >
+                    {STATES_BR.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Save button */}
+          <div className="flex justify-end">
+            <button
+              onClick={handleSaveProfile}
+              disabled={perfSaving || perfSaved}
+              className={`flex items-center gap-2 px-8 py-3 rounded-2xl font-bold text-sm transition-all shadow-lg ${
+                perfSaved
+                  ? 'bg-emerald-600 text-white shadow-emerald-600/30'
+                  : perfSaving
+                  ? 'bg-slate-700 text-slate-300 cursor-wait'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30 hover:shadow-emerald-500/40'
+              }`}
+            >
+              {perfSaving ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Salvando…</>
+              ) : perfSaved ? (
+                <><Check className="h-4 w-4" /> Perfil Salvo!</>
+              ) : (
+                <><Save className="h-4 w-4" /> Salvar Perfil</>
+              )}
+            </button>
           </div>
         </div>
       )}
