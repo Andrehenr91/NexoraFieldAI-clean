@@ -1,0 +1,101 @@
+# ============================================================
+# NexoraField AI — Prometheus Alert Rules (Fase 9)
+# ============================================================
+
+groups:
+  - name: nexora-api
+    interval: 30s
+    rules:
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "Taxa de erros HTTP acima de 5%"
+          description: "Serviço {{ $labels.service }} com {{ $value | humanizePercentage }} de erros nos últimos 5 minutos."
+
+      - alert: APIHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+        annotations:
+          summary: "Latência P95 acima de 2 segundos"
+          description: "P95 de latência é {{ $value | humanizeDuration }}."
+
+      - alert: APIDown
+        expr: up{job="nexora-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: api
+        annotations:
+          summary: "API NexoraField está fora do ar"
+          description: "O serviço {{ $labels.instance }} está inacessível."
+
+  - name: nexora-database
+    rules:
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "PostgreSQL fora do ar"
+          description: "Banco de dados principal inacessível."
+
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_activity_count > 150
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Muitas conexões ativas no PostgreSQL"
+          description: "{{ $value }} conexões ativas (limite: 200)."
+
+  - name: nexora-redis
+    rules:
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: cache
+        annotations:
+          summary: "Redis fora do ar"
+          description: "Serviço de cache inacessível."
+
+      - alert: RedisHighMemory
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: cache
+        annotations:
+          summary: "Redis acima de 90% de memória"
+          description: "Uso de memória: {{ $value | humanizePercentage }}."
+
+  - name: nexora-infrastructure
+    rules:
+      - alert: HighCPU
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU acima de 85% em {{ $labels.instance }}"
+          description: "CPU em {{ $value }}%."
+
+      - alert: HighMemory
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Memória acima de 90% em {{ $labels.instance }}"
+          description: "Memória em {{ $value }}%."

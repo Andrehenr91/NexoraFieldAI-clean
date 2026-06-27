@@ -1,0 +1,75 @@
+# ============================================================
+# NexoraField AI — Prometheus Configuration (Fase 9)
+# Observabilidade: coleta de métricas de todos os serviços
+# ============================================================
+
+global:
+  scrape_interval:     15s
+  evaluation_interval: 15s
+  scrape_timeout:      10s
+  external_labels:
+    cluster: "nexorafield-prod"
+    region:  "southamerica-east1"
+
+rule_files:
+  - "alerts/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+scrape_configs:
+  # ── NexoraField API ────────────────────────────────────────
+  - job_name: "nexora-api"
+    metrics_path: "/api/metrics"
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["nexora-api:5000"]
+        labels:
+          service: "api"
+          env: "production"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+  # ── PostgreSQL (via postgres_exporter) ──────────────────────
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+        labels:
+          service: "database"
+
+  # ── Redis (via redis_exporter) ──────────────────────────────
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+        labels:
+          service: "cache"
+
+  # ── Node Exporter (métricas de host) ──────────────────────
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          service: "infrastructure"
+
+  # ── Kubernetes kube-state-metrics ─────────────────────────
+  - job_name: "kube-state-metrics"
+    static_configs:
+      - targets: ["kube-state-metrics:8080"]
+        labels:
+          service: "kubernetes"
+
+  # ── Workers ────────────────────────────────────────────────
+  - job_name: "nexora-workers"
+    static_configs:
+      - targets:
+          - "nexora-worker-ai:9090"
+          - "nexora-worker-financial:9090"
+          - "nexora-worker-crm:9090"
+          - "nexora-worker-notifications:9090"
+          - "nexora-scheduler:9090"
+        labels:
+          service: "worker"

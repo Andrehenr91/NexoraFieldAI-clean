@@ -1,0 +1,294 @@
+# ============================================================
+# NexoraField AI — Worker Deployments
+# Fase 2/3: Containers e Kubernetes para todos os workers
+# Worker Financeiro | CRM | Notifications | Scheduler | Gateway
+# ============================================================
+
+# ── Worker Financeiro ────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexora-worker-financial
+  namespace: nexorafield
+  labels:
+    app: nexora-worker-financial
+    component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexora-worker-financial
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: nexora-worker-financial
+        component: worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: worker-financial
+          image: gcr.io/nexorafield/api:7.0.0
+          command: ["node", "dist/workers/financial.cjs"]
+          envFrom:
+            - configMapRef:
+                name: nexora-config
+            - secretRef:
+                name: nexora-secrets
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "96Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            exec:
+              command: ["node", "-e", "process.exit(0)"]
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+---
+# ── Worker CRM ───────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexora-worker-crm
+  namespace: nexorafield
+  labels:
+    app: nexora-worker-crm
+    component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexora-worker-crm
+  template:
+    metadata:
+      labels:
+        app: nexora-worker-crm
+        component: worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: worker-crm
+          image: gcr.io/nexorafield/api:7.0.0
+          command: ["node", "dist/workers/crm.cjs"]
+          envFrom:
+            - configMapRef:
+                name: nexora-config
+            - secretRef:
+                name: nexora-secrets
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+---
+# ── Worker Notifications ─────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexora-worker-notifications
+  namespace: nexorafield
+  labels:
+    app: nexora-worker-notifications
+    component: worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nexora-worker-notifications
+  template:
+    metadata:
+      labels:
+        app: nexora-worker-notifications
+        component: worker
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: worker-notifications
+          image: gcr.io/nexorafield/api:7.0.0
+          command: ["node", "dist/workers/notifications.cjs"]
+          envFrom:
+            - configMapRef:
+                name: nexora-config
+            - secretRef:
+                name: nexora-secrets
+          resources:
+            requests:
+              cpu: "30m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+---
+# ── Scheduler ────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexora-scheduler
+  namespace: nexorafield
+  labels:
+    app: nexora-scheduler
+    component: scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexora-scheduler
+  template:
+    metadata:
+      labels:
+        app: nexora-scheduler
+        component: scheduler
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: scheduler
+          image: gcr.io/nexorafield/api:7.0.0
+          command: ["node", "dist/workers/scheduler.cjs"]
+          envFrom:
+            - configMapRef:
+                name: nexora-config
+            - secretRef:
+                name: nexora-secrets
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "48Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+---
+# ── API Gateway ──────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexora-gateway
+  namespace: nexorafield
+  labels:
+    app: nexora-gateway
+    component: gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nexora-gateway
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: nexora-gateway
+        component: gateway
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: gateway
+          image: gcr.io/nexorafield/api:7.0.0
+          command: ["node", "dist/gateway.cjs"]
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: nexora-config
+            - secretRef:
+                name: nexora-secrets
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "80Mi"
+            limits:
+              cpu: "250m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+---
+# ── Webhook Dispatcher ───────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexora-webhook-dispatcher
+  namespace: nexorafield
+  labels:
+    app: nexora-webhook-dispatcher
+    component: webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexora-webhook-dispatcher
+  template:
+    metadata:
+      labels:
+        app: nexora-webhook-dispatcher
+        component: webhook
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: webhook-dispatcher
+          image: gcr.io/nexorafield/api:7.0.0
+          command: ["node", "dist/workers/webhooks.cjs"]
+          envFrom:
+            - configMapRef:
+                name: nexora-config
+            - secretRef:
+                name: nexora-secrets
+          resources:
+            requests:
+              cpu: "20m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
